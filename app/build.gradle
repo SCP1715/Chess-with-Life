@@ -75,13 +75,14 @@ tasks.register('copyLifeChessApk') {
     inputs.dir(releaseApkDir)
     outputs.file(distributableApk)
     doLast {
-        def releaseApks = fileTree(releaseApkDir.get().asFile) {
-            include 'app-release*.apk'
-        }.files
-        if (releaseApks.size() != 1) {
-            throw new GradleException("Expected one release APK, found ${releaseApks.size()}")
+        def releaseDirectory = releaseApkDir.get().asFile
+        def signedReleaseApk = new File(releaseDirectory, 'app-release.apk')
+        def unsignedReleaseApk = new File(releaseDirectory, 'app-release-unsigned.apk')
+        def selectedReleaseApk = signedReleaseApk.isFile() ? signedReleaseApk : unsignedReleaseApk
+        if (!selectedReleaseApk.isFile()) {
+            throw new GradleException('No release APK was produced')
         }
-        java.nio.file.Files.copy(releaseApks.iterator().next().toPath(), distributableApk.toPath(),
+        java.nio.file.Files.copy(selectedReleaseApk.toPath(), distributableApk.toPath(),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING)
     }
 }
