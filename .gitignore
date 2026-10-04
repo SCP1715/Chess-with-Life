@@ -1,0 +1,12 @@
+# Android / Gradle generated files
+.gradle/
+**/build/
+local.properties
+
+# Local signing credentials must never be committed
+/signing/
+
+# Generated APKs and IDE metadata
+*.apk
+.idea/
+*.iml
