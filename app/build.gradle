@@ -59,12 +59,18 @@ dependencies {
 
 tasks.register('copyLifeChessApk') {
     dependsOn 'assembleRelease'
-    def releaseApk = layout.buildDirectory.file('outputs/apk/release/app-release.apk')
+    def releaseApkDir = layout.buildDirectory.dir('outputs/apk/release')
     def distributableApk = rootProject.file('LifeChess.apk')
-    inputs.file(releaseApk)
+    inputs.dir(releaseApkDir)
     outputs.file(distributableApk)
     doLast {
-        java.nio.file.Files.copy(releaseApk.get().asFile.toPath(), distributableApk.toPath(),
+        def releaseApks = fileTree(releaseApkDir.get().asFile) {
+            include 'app-release*.apk'
+        }.files
+        if (releaseApks.size() != 1) {
+            throw new GradleException("Expected one release APK, found ${releaseApks.size()}")
+        }
+        java.nio.file.Files.copy(releaseApks.iterator().next().toPath(), distributableApk.toPath(),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING)
     }
 }
