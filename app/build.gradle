@@ -1,0 +1,66 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'ru.lifeschess'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'ru.lifeschess'
+        minSdk 19
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    signingConfigs {
+        release {
+            def propsFile = rootProject.file('signing/signing.properties')
+            if (propsFile.exists()) {
+                def props = new Properties()
+                propsFile.withInputStream { props.load(it) }
+                storeFile rootProject.file("signing/${props['storeFile']}")
+                storePassword props['storePassword']
+                keyAlias props['keyAlias']
+                keyPassword props['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
+
+tasks.register('copyLifeChessApk') {
+    dependsOn 'assembleRelease'
+    def releaseApk = layout.buildDirectory.file('outputs/apk/release/app-release.apk')
+    def distributableApk = rootProject.file('LifeChess.apk')
+    inputs.file(releaseApk)
+    outputs.file(distributableApk)
+    doLast {
+        java.nio.file.Files.copy(releaseApk.get().asFile.toPath(), distributableApk.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
+}
