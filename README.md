@@ -38,7 +38,18 @@ keyPassword=YOUR_KEY_PASSWORD
 ```
 
 Папка `signing` игнорируется Git. Храните новый ключ и пароли отдельно в
-надёжном месте: для выпуска обновлений понадобится тот же ключ. Затем выполните:
+надёжном месте: для выпуска обновлений понадобится тот же ключ. Вместо файла
+`signing.properties` можно передать секреты через переменные окружения текущей
+сессии `cmd.exe`:
+
+```bat
+set LIFECHESS_RELEASE_KEYSTORE=signing\lifeschess-release.jks
+set LIFECHESS_RELEASE_KEY_ALIAS=lifeschess
+set LIFECHESS_RELEASE_STORE_PASSWORD=YOUR_STORE_PASSWORD
+set LIFECHESS_RELEASE_KEY_PASSWORD=YOUR_KEY_PASSWORD
+```
+
+Затем выполните:
 
 ```bat
 gradlew.bat copyLifeChessApk
@@ -48,9 +59,9 @@ gradlew.bat copyLifeChessApk
 APK, keystore или файл `signing.properties` в Git.
 
 Ключ подписи, который ранее находился в публичной истории репозитория, следует
-считать скомпрометированным. Он удалён из текущей версии; используйте новый
-ключ для будущих сборок. Очистка старых Git-коммитов и публикация переписанной
-истории выполняются отдельно, поскольку это меняет историю ветки `main`.
+считать скомпрометированным. Он удалён из истории ветки `main`; используйте
+новый ключ для будущих сборок. GitHub может временно сохранять кеши старых
+объектов.
 
 ## Установка
 

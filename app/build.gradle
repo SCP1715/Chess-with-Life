@@ -10,8 +10,8 @@ android {
         applicationId 'ru.lifeschess'
         minSdk 19
         targetSdk 34
-        versionCode 1
-        versionName '1.0'
+        versionCode 2
+        versionName '0.1'
     }
 
     compileOptions {
@@ -26,6 +26,9 @@ android {
     signingConfigs {
         release {
             def propsFile = rootProject.file('signing/signing.properties')
+            def envStorePassword = System.getenv('LIFECHESS_RELEASE_STORE_PASSWORD')
+            def envKeyPassword = System.getenv('LIFECHESS_RELEASE_KEY_PASSWORD')
+            def hasEnvironmentSigning = envStorePassword && envKeyPassword
             if (propsFile.exists()) {
                 def props = new Properties()
                 propsFile.withInputStream { props.load(it) }
@@ -33,6 +36,12 @@ android {
                 storePassword props['storePassword']
                 keyAlias props['keyAlias']
                 keyPassword props['keyPassword']
+            } else if (hasEnvironmentSigning) {
+                storeFile rootProject.file(System.getenv('LIFECHESS_RELEASE_KEYSTORE')
+                        ?: 'signing/lifeschess-release.jks')
+                storePassword envStorePassword
+                keyAlias System.getenv('LIFECHESS_RELEASE_KEY_ALIAS') ?: 'lifeschess'
+                keyPassword envKeyPassword
             }
         }
     }
@@ -44,8 +53,10 @@ android {
         }
         release {
             // A clean checkout must remain buildable without exposing a private key.
-            // Developers can opt into signing by creating the ignored local properties file.
-            if (rootProject.file('signing/signing.properties').exists()) {
+            // Signing can be configured by an ignored properties file or environment variables.
+            def hasEnvironmentSigning = System.getenv('LIFECHESS_RELEASE_STORE_PASSWORD')
+                    && System.getenv('LIFECHESS_RELEASE_KEY_PASSWORD')
+            if (rootProject.file('signing/signing.properties').exists() || hasEnvironmentSigning) {
                 signingConfig signingConfigs.release
             }
             minifyEnabled false
