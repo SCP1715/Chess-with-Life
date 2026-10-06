@@ -9,6 +9,9 @@ public final class MoveApplier {
         Piece captured = s.board.at(move.to);
         boolean capture = captured != null;
         boolean pawnMove = moving.type == PieceType.PAWN;
+        boolean promotes = pawnMove && Board.row(move.to) == moving.side.promotionRow();
+        if (!promotes && promotion != null)
+            throw new IllegalArgumentException("Promotion choice supplied for a non-promotion move");
         int ep = -1;
         Board b;
         if (move.kind == Move.Kind.CASTLE_KING || move.kind == Move.Kind.CASTLE_QUEEN
@@ -24,7 +27,7 @@ public final class MoveApplier {
             }
             if (pawnMove && Math.abs(Board.row(move.to) - Board.row(move.from)) == 2)
                 ep = (move.from + move.to) / 2;
-            if (pawnMove && Board.row(move.to) == moving.side.promotionRow()) {
+            if (promotes) {
                 if (promotion == null || promotion == PieceType.PAWN)
                     throw new IllegalArgumentException("Promotion choice required");
                 Board beforePromotion = b;
@@ -64,9 +67,11 @@ public final class MoveApplier {
         if (result == GameResult.NONE && b.countKings(next) == 0)
             result = moving.side == Side.WHITE ? GameResult.WHITE_WIN : GameResult.BLACK_WIN;
         int half = pawnMove || capture ? 0 : s.halfMovesSinceCaptureOrPawn + 1;
+        Side pendingOffer = s.drawOfferBy == moving.side.opposite() ? null : s.drawOfferBy;
         GameState applied = s.copy(b, next, ep, debt, half, wK, wQ, wV, bK, bQ, bV,
-                result, s.drawOfferBy, s.repetitions);
-        return DrawDetector.recordPosition(applied);
+                result, result == GameResult.NONE ? pendingOffer : null, s.repetitions);
+        GameAction action = GameAction.move(move, promotion);
+        return DrawDetector.recordPosition(applied.withEngineMove(action).withHistoryAction(action));
     }
 
     private static boolean[] clearRookRight(Side side, int square,

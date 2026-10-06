@@ -4,6 +4,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RuleEngineTest {
     private Board board(Object... entries) {
@@ -23,7 +24,196 @@ public class RuleEngineTest {
         return false;
     }
 
-    @Test public void initialPositionIncludesKingsCaptureOwnPieces() { assertEquals(25, MoveGenerator.allLegalMoves(GameState.initial()).size()); }
+    @Test public void initialPositionStartsWithWhiteAndHasTwentyFiveMoves() {
+        GameState initial = GameState.initial();
+        assertEquals(Side.WHITE, initial.toMove);
+        assertEquals(25, MoveGenerator.allLegalMoves(initial).size());
+    }
+
+    @Test public void distantBareKingsCanBeClaimedByEitherSideButAreNotAutomatic() {
+        Board b = board("a1", Side.WHITE, PieceType.KING, "h8", Side.BLACK, PieceType.KING);
+        for (Side turn : Side.values()) {
+            GameState position = state(b, turn);
+            assertEquals(GameResult.NONE, position.result);
+            assertTrue(DrawDetector.canClaimBareKings(position));
+            assertTrue(RuleEngine.legalActions(position).contains(
+                    GameAction.procedure(GameAction.Type.CLAIM_BARE_KINGS)));
+            assertTrue(RuleEngine.legalActions(position).stream()
+                    .anyMatch(action -> action.type == GameAction.Type.MOVE));
+            GameState claimed = RuleEngine.applyAction(position,
+                    GameAction.procedure(GameAction.Type.CLAIM_BARE_KINGS));
+            assertEquals(GameResult.DRAW_BARE_KINGS, claimed.result);
+            assertEquals(turn, claimed.toMove);
+            assertSame(position.board, claimed.board);
+            assertEquals(position.halfMovesSinceCaptureOrPawn, claimed.halfMovesSinceCaptureOrPawn);
+            assertEquals(1, claimed.history.size());
+            assertEquals(GameAction.Type.CLAIM_BARE_KINGS, claimed.history.get(0).type);
+        }
+    }
+
+    @Test public void adjacentBareKingsCannotBeClaimedAndMayBeCaptured() {
+        String[][] pairs = {{"a1", "b1"}, {"a1", "a2"}, {"a1", "b2"}};
+        for (String[] pair : pairs) {
+            GameState position = state(board(pair[0], Side.WHITE, PieceType.KING,
+                    pair[1], Side.BLACK, PieceType.KING), Side.WHITE);
+            assertFalse(DrawDetector.canClaimBareKings(position));
+            assertFalse(RuleEngine.legalActions(position).contains(
+                    GameAction.procedure(GameAction.Type.CLAIM_BARE_KINGS)));
+            Move capture = findOrNull(position, pair[0], pair[1]);
+            assertNotNull("King capture must remain legal for " + pair[0] + " x " + pair[1], capture);
+            assertEquals(GameResult.WHITE_WIN, RuleEngine.play(position, capture, null).result);
+        }
+    }
+
+    @Test public void bareKingsClaimUsesChebyshevDistanceAndOnlyExactTwoKings() {
+        assertTrue(DrawDetector.canClaimBareKings(state(board(
+                "a1", Side.WHITE, PieceType.KING, "c1", Side.BLACK, PieceType.KING), Side.WHITE)));
+        PieceType[] thirdPieces = {PieceType.BISHOP, PieceType.KNIGHT, PieceType.PAWN,
+                PieceType.ROOK, PieceType.QUEEN, PieceType.KING};
+        for (PieceType extra : thirdPieces) {
+            Board b = board("a1", Side.WHITE, PieceType.KING, "h8", Side.BLACK, PieceType.KING,
+                    "d4", extra == PieceType.KING ? Side.WHITE : Side.BLACK, extra);
+            assertFalse("Third piece " + extra + " must disable the claim",
+                    DrawDetector.canClaimBareKings(state(b, Side.WHITE)));
+        }
+        assertFalse(DrawDetector.canClaimBareKings(state(board(
+                "a1", Side.WHITE, PieceType.KING, "c1", Side.WHITE, PieceType.KING), Side.WHITE)));
+    }
+
+    @Test public void closingKingDistanceRemainsLegalAndRemovesOnlyBareKingsClaim() {
+        GameState position = state(board("f6", Side.WHITE, PieceType.KING,
+                "h8", Side.BLACK, PieceType.KING), Side.WHITE);
+        assertTrue(DrawDetector.canClaimBareKings(position));
+        Move approach = findOrNull(position, "f6", "g7");
+        assertNotNull(approach);
+        GameState after = RuleEngine.play(position, approach, null);
+        assertEquals(GameResult.NONE, after.result);
+        assertFalse(DrawDetector.canClaimBareKings(after));
+    }
+
+    @Test public void bareKingsClaimIsIndependentFromFiftyMoveClaimAndOfferLatch() {
+        GameState position = new GameState(board("a1", Side.WHITE, PieceType.KING,
+                "h8", Side.BLACK, PieceType.KING), Side.WHITE, -1, null, 100,
+                false, false, false, false, false, false, GameResult.NONE, null,
+                new HashMap<String, Integer>(), null, true);
+        assertTrue(RuleEngine.legalActions(position).contains(
+                GameAction.procedure(GameAction.Type.CLAIM_FIFTY_MOVES)));
+        GameState claimed = RuleEngine.applyAction(position,
+                GameAction.procedure(GameAction.Type.CLAIM_BARE_KINGS));
+        assertEquals(GameResult.DRAW_BARE_KINGS, claimed.result);
+        assertEquals(100, claimed.halfMovesSinceCaptureOrPawn);
+    }
+
+    @Test public void bareKingsClaimCannotMaskDebtOrInvalidAction() {
+        GameState debt = state(board("a1", Side.WHITE, PieceType.KING,
+                "h8", Side.BLACK, PieceType.KING), Side.WHITE, -1, Side.BLACK, 0);
+        assertFalse(DrawDetector.canClaimBareKings(debt));
+        try {
+            RuleEngine.applyAction(debt, GameAction.procedure(GameAction.Type.CLAIM_BARE_KINGS));
+            fail("A bare-kings claim cannot bypass an active debt");
+        } catch (IllegalArgumentException expected) { }
+        assertEquals(GameResult.NONE, debt.result);
+        assertEquals(0, debt.history.size());
+    }
+
+    @Test public void bareKingsPredicateExhaustivelyMatchesChebyshevDistance() {
+        int adjacent = 0;
+        int distant = 0;
+        for (int white = 0; white < 64; white++) {
+            for (int black = 0; black < 64; black++) {
+                if (white == black) continue;
+                Board b = new Board().with(white, new Piece(Side.WHITE, PieceType.KING, false))
+                        .with(black, new Piece(Side.BLACK, PieceType.KING, false));
+                int distance = Math.max(Math.abs(Board.col(white) - Board.col(black)),
+                        Math.abs(Board.row(white) - Board.row(black)));
+                for (Side turn : Side.values()) {
+                    boolean expected = distance > 1;
+                    assertEquals("white=" + white + ", black=" + black + ", turn=" + turn,
+                            expected, DrawDetector.canClaimBareKings(state(b, turn)));
+                    if (expected) distant++; else adjacent++;
+                }
+            }
+        }
+        assertEquals(840, adjacent);
+        assertEquals(7224, distant);
+    }
+
+    @Test public void takingLastNonKingFigureCanCreateBareKingsClaim() {
+        for (Side victimSide : Side.values()) {
+            Board b = board("a1", Side.WHITE, PieceType.KING, "h8", Side.BLACK, PieceType.KING,
+                    "b2", victimSide, PieceType.BISHOP);
+            GameState before = state(b, Side.WHITE);
+            Move capture = findOrNull(before, "a1", "b2");
+            assertNotNull("King must take the final non-king piece", capture);
+            GameState after = RuleEngine.play(before, capture, null);
+            assertEquals(GameResult.NONE, after.result);
+            assertEquals(PieceType.KING, after.board.at(square("b2")).type);
+            assertTrue(DrawDetector.canClaimBareKings(after));
+            assertTrue(RuleEngine.legalActions(after).contains(
+                    GameAction.procedure(GameAction.Type.CLAIM_BARE_KINGS)));
+        }
+    }
+
+    @Test public void lastNonKingCaptureLeavingAdjacentKingsDoesNotCreateClaim() {
+        GameState before = state(board("f6", Side.WHITE, PieceType.KING,
+                "h8", Side.BLACK, PieceType.KING, "g7", Side.BLACK, PieceType.BISHOP), Side.WHITE);
+        Move capture = findOrNull(before, "f6", "g7");
+        assertNotNull(capture);
+        GameState after = RuleEngine.play(before, capture, null);
+        assertFalse(DrawDetector.canClaimBareKings(after));
+        assertNotNull(findOrNull(after, "h8", "g7"));
+        assertEquals(GameResult.BLACK_WIN,
+                RuleEngine.play(after, findOrNull(after, "h8", "g7"), null).result);
+    }
+
+    @Test public void newDrawActionRoundTripsThroughVersionedProtocol() {
+        GameAction claim = GameAction.procedure(GameAction.Type.CLAIM_BARE_KINGS);
+        assertEquals(claim, LifeChessProtocol.decodeAction(LifeChessProtocol.encodeAction(claim)));
+        GameState position = state(board("a1", Side.WHITE, PieceType.KING,
+                "h8", Side.BLACK, PieceType.KING), Side.WHITE);
+        GameState claimed = RuleEngine.applyAction(position, claim);
+        String snapshot = LifeChessProtocol.encodeSnapshot("bare-kings", 9, claimed);
+        LifeChessProtocol.Snapshot decoded = LifeChessProtocol.decodeSnapshot(snapshot);
+        assertEquals(GameResult.DRAW_BARE_KINGS, decoded.state.result);
+        assertEquals(claim, decoded.state.history.get(0));
+    }
+
+    @Test public void engineReplayPreservesRootAndSkipsDrawProcedureActions() {
+        GameState initial = GameState.initial();
+        assertEquals(LifeChessFen.encode(initial), initial.searchRootFen);
+        GameState offered = RuleEngine.applyAction(initial,
+                GameAction.procedure(GameAction.Type.OFFER_DRAW));
+        assertTrue(offered.searchMoves.isEmpty());
+        GameAction decline = GameAction.procedure(GameAction.Type.DECLINE_DRAW);
+        GameState incomingOffer = initial.copy(initial.board, initial.toMove,
+                initial.enPassantTarget, initial.debtTargetKings,
+                initial.halfMovesSinceCaptureOrPawn, initial.whiteKingSide,
+                initial.whiteQueenSide, initial.whiteVertical, initial.blackKingSide,
+                initial.blackQueenSide, initial.blackVertical, initial.result,
+                Side.BLACK, initial.repetitions);
+        GameState declined = RuleEngine.applyAction(incomingOffer, decline);
+        assertTrue(declined.searchMoves.isEmpty());
+
+        Move e2e4 = find(initial, "e2", "e4");
+        GameState moved = RuleEngine.play(initial, e2e4, null);
+        assertEquals(initial.searchRootFen, moved.searchRootFen);
+        assertEquals(java.util.Collections.singletonList("e2e4"), moved.searchMoves);
+        GameState restored = LifeChessProtocol.decodeSnapshot(LifeChessProtocol.encodeSnapshot(
+                "history-roundtrip", 4, moved)).state;
+        assertEquals(moved.searchRootFen, restored.searchRootFen);
+        assertEquals(moved.searchMoves, restored.searchMoves);
+    }
+
+    @Test public void bareKingsClaimIsUnavailableAfterAnyTerminalResult() {
+        GameState ongoing = state(board("a1", Side.WHITE, PieceType.KING,
+                "h8", Side.BLACK, PieceType.KING), Side.WHITE);
+        GameState ended = ongoing.copy(ongoing.board, ongoing.toMove, ongoing.enPassantTarget,
+                ongoing.debtTargetKings, ongoing.halfMovesSinceCaptureOrPawn,
+                false, false, false, false, false, false, GameResult.WHITE_WIN,
+                null, ongoing.repetitions);
+        assertFalse(DrawDetector.canClaimBareKings(ended));
+        assertTrue(RuleEngine.legalActions(ended).isEmpty());
+    }
     @Test public void rookCannotJumpOverBlocker() {
         GameState s = state(board("a1", Side.WHITE, PieceType.ROOK, "a3", Side.WHITE, PieceType.PAWN, "h8", Side.BLACK, PieceType.KING), Side.WHITE);
         assertFalse(has(s, "a1", "a4"));
@@ -226,11 +416,22 @@ public class RuleEngineTest {
     }
     @Test public void editorRejectsSideToMoveWithoutKing() {
         GameState s = state(board("a1", Side.WHITE, PieceType.KING), Side.BLACK);
-        assertNotNull(RuleEngine.validateEditorStart(s));
+        assertEquals("У стороны, которой ходить, должен быть хотя бы один король.",
+                RuleEngine.validateEditorStart(s));
+        assertEquals(PieceType.KING, s.board.at(square("a1")).type);
     }
     @Test public void editorRejectsUnfulfillableDebt() {
         GameState s = state(board("a1", Side.WHITE, PieceType.KING, "h8", Side.BLACK, PieceType.KING), Side.WHITE, -1, Side.BLACK, 0);
-        assertNotNull(RuleEngine.validateEditorStart(s));
+        assertEquals("Нельзя начать: активный долг невозможно исполнить взятием короля.",
+                RuleEngine.validateEditorStart(s));
+    }
+    @Test public void editorAllowsMultipleKingsAndExecutableDebt() {
+        GameState s = state(board("a1", Side.WHITE, PieceType.KING, "h1", Side.WHITE, PieceType.KING,
+                "h8", Side.BLACK, PieceType.KING, "a8", Side.BLACK, PieceType.ROOK),
+                Side.BLACK, -1, Side.WHITE, 0);
+        assertNull(RuleEngine.validateEditorStart(s));
+        assertTrue(RuleEngine.legalActions(s).contains(GameAction.move(
+                new Move(square("a8"), square("a1")), null)));
     }
     @Test public void editorKeepsUnusualArrangementUnchanged() {
         Board b = board("a1", Side.WHITE, PieceType.KING, "a1", Side.BLACK, PieceType.QUEEN);
@@ -278,14 +479,228 @@ public class RuleEngineTest {
         assertEquals(GameResult.DRAW_FIFTY_MOVES, RuleEngine.claimDraw(s, false).result);
     }
     @Test public void drawAgreementRequiresOfferThenResponse() {
-        GameState offered = RuleEngine.offerDraw(GameState.initial());
+        GameState offered = RuleEngine.applyAction(GameState.initial(),
+                GameAction.procedure(GameAction.Type.OFFER_DRAW));
         assertEquals(GameResult.NONE, offered.result);
-        assertEquals(GameResult.DRAW_AGREEMENT, RuleEngine.respondDraw(offered, true).result);
-        assertNull(RuleEngine.respondDraw(offered, false).drawOfferBy);
+        assertTrue(RuleEngine.legalActions(offered).contains(
+                GameAction.procedure(GameAction.Type.ACCEPT_DRAW)));
+        assertTrue(RuleEngine.legalActions(offered).contains(
+                GameAction.procedure(GameAction.Type.DECLINE_DRAW)));
+
+        GameState accepted = RuleEngine.applyAction(offered,
+                GameAction.procedure(GameAction.Type.ACCEPT_DRAW));
+        assertEquals(GameResult.DRAW_AGREEMENT, accepted.result);
+        assertTrue(RuleEngine.legalActions(accepted).isEmpty());
+
+        GameState declined = RuleEngine.applyAction(offered,
+                GameAction.procedure(GameAction.Type.DECLINE_DRAW));
+        assertEquals(GameResult.NONE, declined.result);
+        assertNull(declined.drawOfferBy);
+        assertEquals(offered.board, declined.board);
+        assertEquals(offered.toMove, declined.toMove);
+        assertEquals(offered.halfMovesSinceCaptureOrPawn,
+                declined.halfMovesSinceCaptureOrPawn);
+        assertEquals(offered.repetitions, declined.repetitions);
+        assertEquals(2, declined.history.size());
+    }
+
+    @Test public void completeActionsKeepPromotionChoiceDistinct() {
+        GameState s = state(board("h2", Side.WHITE, PieceType.KING,
+                "c1", Side.WHITE, PieceType.BISHOP, "b7", Side.WHITE, PieceType.PAWN,
+                "h6", Side.BLACK, PieceType.KING, "h7", Side.BLACK, PieceType.QUEEN,
+                "d2", Side.BLACK, PieceType.ROOK), Side.WHITE);
+        GameAction queen = null, king = null;
+        for (GameAction action : RuleEngine.legalActions(s)) {
+            if (action.type == GameAction.Type.MOVE && action.from == square("b7")
+                    && action.to == square("b8")) {
+                if (action.promotion == PieceType.QUEEN) queen = action;
+                if (action.promotion == PieceType.KING) king = action;
+            }
+        }
+        assertNotNull(queen);
+        assertNotNull(king);
+        assertNotEquals(queen, king);
+        assertNull(RuleEngine.applyAction(s, queen).debtTargetKings);
+        GameState kingPromotion = RuleEngine.applyAction(s, king);
+        assertEquals(Side.WHITE, kingPromotion.debtTargetKings);
+        assertEquals(PieceType.KING, kingPromotion.board.at(square("b8")).type);
+    }
+
+    @Test public void completeActionsRepresentDrawProcedureSeparately() {
+        GameState s = GameState.initial();
+        String key = PositionKey.of(s);
+        HashMap<String, Integer> map = new HashMap<>();
+        map.put(key, 2);
+        s = new GameState(s.board, s.toMove, s.enPassantTarget, s.debtTargetKings,
+                s.halfMovesSinceCaptureOrPawn, s.whiteKingSide, s.whiteQueenSide, s.whiteVertical,
+                s.blackKingSide, s.blackQueenSide, s.blackVertical, s.result, null, map);
+        s = DrawDetector.recordPosition(s);
+
+        assertTrue(RuleEngine.legalActions(s).contains(
+                GameAction.procedure(GameAction.Type.CLAIM_REPETITION)));
+        GameState draw = RuleEngine.applyAction(s,
+                GameAction.procedure(GameAction.Type.CLAIM_REPETITION));
+        assertEquals(GameResult.DRAW_REPETITION, draw.result);
+        assertTrue(RuleEngine.legalActions(draw).isEmpty());
+        assertEquals(1, draw.history.size());
+        assertEquals(GameAction.Type.CLAIM_REPETITION, draw.history.get(0).type);
+    }
+
+    @Test public void claimRemainsAvailableDuringOpponentDrawOffer() {
+        GameState initial = GameState.initial();
+        Map<String, Integer> repetitions = new HashMap<>();
+        repetitions.put(PositionKey.of(initial), 2);
+        GameState claimable = new GameState(initial.board, initial.toMove, initial.enPassantTarget,
+                initial.debtTargetKings, 100, initial.whiteKingSide, initial.whiteQueenSide,
+                initial.whiteVertical, initial.blackKingSide, initial.blackQueenSide,
+                initial.blackVertical, GameResult.NONE, Side.BLACK, repetitions);
+        claimable = DrawDetector.recordPosition(claimable);
+
+        List<GameAction> actions = RuleEngine.legalActions(claimable);
+        assertTrue(actions.contains(GameAction.procedure(GameAction.Type.CLAIM_REPETITION)));
+        assertTrue(actions.contains(GameAction.procedure(GameAction.Type.CLAIM_FIFTY_MOVES)));
+        assertTrue(actions.contains(GameAction.procedure(GameAction.Type.ACCEPT_DRAW)));
+        assertTrue(actions.contains(GameAction.procedure(GameAction.Type.DECLINE_DRAW)));
+        assertFalse(actions.contains(GameAction.procedure(GameAction.Type.OFFER_DRAW)));
+
+        GameState claimed = RuleEngine.applyAction(claimable,
+                GameAction.procedure(GameAction.Type.CLAIM_REPETITION));
+        assertEquals(GameResult.DRAW_REPETITION, claimed.result);
+        assertNull(claimed.drawOfferBy);
+
+        GameState offererTurn = new GameState(initial.board, initial.toMove, -1, null, 0,
+                initial.whiteKingSide, initial.whiteQueenSide, initial.whiteVertical,
+                initial.blackKingSide, initial.blackQueenSide, initial.blackVertical,
+                GameResult.NONE, Side.WHITE, initial.repetitions);
+        List<GameAction> offererActions = RuleEngine.legalActions(offererTurn);
+        assertTrue(offererActions.stream().anyMatch(a -> a.type == GameAction.Type.MOVE));
+        assertTrue(offererActions.contains(GameAction.procedure(GameAction.Type.ACCEPT_DRAW)));
+        assertTrue(offererActions.contains(GameAction.procedure(GameAction.Type.DECLINE_DRAW)));
+
+        GameState receiverMove = RuleEngine.play(claimable.copy(claimable.board, Side.WHITE, -1,
+                null, 0, true, true, true, true, true, true, GameResult.NONE, Side.BLACK,
+                claimable.repetitions), find(initial, "e2", "e4"), null);
+        assertNull(receiverMove.drawOfferBy);
+    }
+
+    @Test public void gameStateRetainsImmutableActionHistory() {
+        GameState start = GameState.initial();
+        Move move = find(start, "e2", "e4");
+        GameState afterMove = RuleEngine.play(start, move, null);
+        assertEquals(1, afterMove.history.size());
+        assertEquals(GameAction.move(move, null), afterMove.history.get(0));
+
+        GameAction offer = GameAction.procedure(GameAction.Type.OFFER_DRAW);
+        GameState offered = RuleEngine.applyAction(afterMove, offer);
+        assertEquals(2, offered.history.size());
+        assertEquals(1, afterMove.history.size());
+        try {
+            offered.history.clear();
+            fail("History was externally mutable");
+        } catch (UnsupportedOperationException expected) {
+            assertEquals(2, offered.history.size());
+        }
+        try {
+            offered.repetitions.clear();
+            fail("Repetition context was externally mutable");
+        } catch (UnsupportedOperationException expected) {
+            assertFalse(offered.repetitions.isEmpty());
+        }
+    }
+
+    @Test public void promotionChoiceOnOrdinaryMoveIsRejectedAtomically() {
+        GameState s = state(board("e1", Side.WHITE, PieceType.KING,
+                "h8", Side.BLACK, PieceType.KING, "a2", Side.WHITE, PieceType.ROOK), Side.WHITE);
+        try {
+            RuleEngine.play(s, find(s, "a2", "a3"), PieceType.QUEEN);
+            fail("Non-promotion action accepted a promotion type");
+        } catch (IllegalArgumentException expected) {
+            assertEquals(PieceType.ROOK, s.board.at(square("a2")).type);
+            assertEquals(Side.WHITE, s.toMove);
+        }
+    }
+
+    @Test public void versionedProtocolRoundTripsFullSnapshotAndRequest() {
+        Board b = board("e1", Side.WHITE, PieceType.KING, "h8", Side.BLACK, PieceType.KING,
+                "e5", Side.WHITE, PieceType.PAWN, "d5", Side.BLACK, PieceType.PAWN);
+        b = b.with(square("e1"), new Piece(Side.WHITE, PieceType.KING, true));
+        b = b.with(square("e5"), new Piece(Side.WHITE, PieceType.PAWN, true));
+        b = b.with(square("d5"), new Piece(Side.BLACK, PieceType.PAWN, true));
+        Map<String, Integer> repetitions = new HashMap<>();
+        repetitions.put("board|turn|debt", 2);
+        GameAction move = GameAction.move(new Move(square("e5"), square("d6"), Move.Kind.EN_PASSANT), null);
+        GameAction offer = GameAction.procedure(GameAction.Type.OFFER_DRAW);
+        GameState original = new GameState(b, Side.WHITE, square("d6"), Side.BLACK, 77,
+                true, false, true, false, true, false, GameResult.NONE, Side.BLACK,
+                repetitions, java.util.Arrays.asList(move, offer), true);
+
+        String encoded = LifeChessProtocol.encodeSnapshot("req-17", 41, original);
+        LifeChessProtocol.Snapshot decoded = LifeChessProtocol.decodeSnapshot(encoded);
+        assertEquals("req-17", decoded.requestId);
+        assertEquals(41L, decoded.stateRevision);
+        GameState copy = decoded.state;
+        assertEquals(Side.WHITE, copy.toMove);
+        assertEquals(square("d6"), copy.enPassantTarget);
+        assertEquals(Side.BLACK, copy.debtTargetKings);
+        assertEquals(77, copy.halfMovesSinceCaptureOrPawn);
+        assertTrue(copy.whiteKingSide);
+        assertTrue(copy.whiteVertical);
+        assertTrue(copy.blackQueenSide);
+        assertEquals(GameResult.NONE, copy.result);
+        assertEquals(Side.BLACK, copy.drawOfferBy);
+        assertTrue(copy.drawOfferSentInCurrentNonWinningStretch);
+        assertEquals(2, (int) copy.repetitions.get("board|turn|debt"));
+        assertTrue(copy.board.at(square("e1")).hasMoved);
+        assertTrue(copy.board.at(square("e5")).hasMoved);
+        assertEquals(original.history, copy.history);
+        assertEquals(encoded, LifeChessProtocol.encodeSnapshot("req-17", 41, copy));
+
+        LifeChessProtocol.Request request = new LifeChessProtocol.Request("apply-18", 42,
+                LifeChessProtocol.Operation.APPLY_ACTION, original, move);
+        LifeChessProtocol.Request decodedRequest = LifeChessProtocol.decodeRequest(
+                LifeChessProtocol.encodeRequest(request));
+        assertEquals(request.requestId, decodedRequest.requestId);
+        assertEquals(request.stateRevision, decodedRequest.stateRevision);
+        assertEquals(request.operation, decodedRequest.operation);
+        assertEquals(move, decodedRequest.action);
+        assertEquals(Side.BLACK, decodedRequest.state.debtTargetKings);
+
+        List<GameAction> actions = RuleEngine.legalActions(original);
+        LifeChessProtocol.Response response = new LifeChessProtocol.Response("req-17", 42,
+                LifeChessProtocol.ResponseKind.LEGAL_ACTIONS, original, actions,
+                actions.get(0), null, null);
+        LifeChessProtocol.Response decodedResponse = LifeChessProtocol.decodeResponse(
+                LifeChessProtocol.encodeResponse(response));
+        assertEquals(response.requestId, decodedResponse.requestId);
+        assertEquals(response.stateRevision, decodedResponse.stateRevision);
+        assertEquals(response.kind, decodedResponse.kind);
+        assertEquals(actions, decodedResponse.legalActions);
+        assertEquals(response.selectedAction, decodedResponse.selectedAction);
+        assertEquals(encoded, LifeChessProtocol.encodeSnapshot(decodedResponse.requestId,
+                41, decodedResponse.state));
+    }
+
+    @Test public void protocolRejectsUnsupportedVersionAndMalformedAction() {
+        String snapshot = LifeChessProtocol.encodeSnapshot("v-check", 0, GameState.initial());
+        try {
+            LifeChessProtocol.decodeSnapshot(snapshot.replace("\"version\":2", "\"version\":99"));
+            fail("Unsupported protocol version was accepted");
+        } catch (IllegalArgumentException expected) { }
+
+        try {
+            LifeChessProtocol.decodeAction("{\"type\":\"MOVE\",\"from\":\"z9\","
+                    + "\"to\":\"a1\",\"moveKind\":\"NORMAL\",\"promotion\":null}");
+            fail("Malformed square was accepted");
+        } catch (IllegalArgumentException expected) { }
     }
 
     private Move find(GameState s, String from, String to) {
         for (Move m : RuleEngine.legalMoves(s, square(from))) if (m.to == square(to)) return m;
         throw new AssertionError("No move " + from + " -> " + to);
+    }
+
+    private Move findOrNull(GameState s, String from, String to) {
+        for (Move m : RuleEngine.legalMoves(s, square(from))) if (m.to == square(to)) return m;
+        return null;
     }
 }

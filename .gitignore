@@ -1,6 +1,9 @@
 # Android / Gradle generated files
 .gradle/
 **/build/
+**/.cxx/
+__pycache__/
+*.py[cod]
 local.properties
 
 # Local signing credentials must never be committed
