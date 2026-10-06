@@ -1,0 +1,37 @@
+{
+  "source": "playtest-results\\endgame-analysis-20261006\\night-endgame-episodes.jsonl.gz",
+  "model": "MODEL_UNBOUNDED",
+  "perspective": "mover at parent; selected child outcome normalized back to mover",
+  "counts": {
+    "coveredObservedMoves": 49979,
+    "WIN_PRESERVED_BUT_SLOWER": 1221,
+    "LOSS_PRESERVED_BUT_SHORTER": 421
+  },
+  "parentWdlCounts": {
+    "LOSS": 3892,
+    "WIN": 3909,
+    "DRAW": 42178
+  },
+  "byProfile": {
+    "A": {
+      "coveredObservedMoves": 27035,
+      "WIN_PRESERVED_BUT_SLOWER": 1197,
+      "LOSS_PRESERVED_BUT_SHORTER": 412
+    },
+    "B": {
+      "coveredObservedMoves": 2633,
+      "WIN_PRESERVED_BUT_SLOWER": 24,
+      "LOSS_PRESERVED_BUT_SHORTER": 9
+    },
+    "C": {
+      "coveredObservedMoves": 20311
+    }
+  },
+  "meaning": {
+    "WIN_TO_DRAW_OR_LOSS": "observed move abandoned a table-proved win",
+    "DRAW_TO_LOSS": "observed move changed table-proved draw to loss",
+    "WIN_PRESERVED_BUT_SLOWER": "same WDL but selected line takes more plies than DTLK",
+    "LOSS_PRESERVED_BUT_SHORTER": "same loss but failed to maximize DTLK",
+    "notMeasured": "MODEL_FIFTY/MODEL_HISTORY decisions; positions outside computed tables; alternate branches"
+  }
+}

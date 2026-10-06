@@ -1,0 +1,47 @@
+{
+  "releaseTag": "research-night-20261006",
+  "assets": [
+    {
+      "name": "series-20261006-data.zip",
+      "sizeBytes": 55051229,
+      "sha256": "99ebc6b77ebf2bdbfe622002cbcca4d52af30b4db7a62849f819371aa11fa6fa",
+      "description": "Original 100-game series, including its known shared draw-offer cooldown bug."
+    },
+    {
+      "name": "series-20261006-v2-data.zip",
+      "sizeBytes": 37664163,
+      "sha256": "377ab839ed58c81034ce36be999a347ee7141fc5ce49ae9c0c3121719205adfd",
+      "description": "Separate 100-game series with per-side offer cooldowns; predates the bare-kings draw claim."
+    },
+    {
+      "name": "night-20261006-A.part1.rar",
+      "sizeBytes": 471859200,
+      "sha256": "e5551796b8f93923cfba80fb9fbe62c956c924605c2c62048f3cff53facf699b",
+      "description": "Required first volume of the multi-volume Profile A archive."
+    },
+    {
+      "name": "night-20261006-A.part2.rar",
+      "sizeBytes": 471859200,
+      "sha256": "4907f9f9d864010bf9c64012d046d3f19c807cf60bada8a71692eb285b44cac1",
+      "description": "Required second volume of the multi-volume Profile A archive."
+    },
+    {
+      "name": "night-20261006-A.part3.rar",
+      "sizeBytes": 242354488,
+      "sha256": "2a0ceefe30c08c0e21f12e8c32b6b075f0b47d790b7bd2ab96e1ab8305eef508",
+      "description": "Required third volume of the multi-volume Profile A archive."
+    },
+    {
+      "name": "night-20261006.rar",
+      "sizeBytes": 445664483,
+      "sha256": "bee58fbde08cd78ad4b8c000c0a3c086c812ff8fac7402371a4147e64c7028a6",
+      "description": "Profiles B/C and pilot logs."
+    },
+    {
+      "name": "lifechess-endgame-tables-20261006.zip",
+      "sizeBytes": 3446243,
+      "sha256": "b7c7ddd200c1fd5ef9a91b32aef6dcd2b2ad4eb2b7ef6c8e65f03390855ea9bb",
+      "description": "Verified exact endgame tables for the supported classes in coverage-manifest.json."
+    }
+  ]
+}

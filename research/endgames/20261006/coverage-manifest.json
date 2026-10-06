@@ -1,0 +1,115 @@
+{
+  "analyzerVersion": "0.1.0",
+  "rulesVersion": "docs/lifechess-rules.md 1.0 (RULES_VERSION=100)",
+  "models": {
+    "MODEL_UNBOUNDED": "partially computed; exact for listed supported classes only",
+    "MODEL_FIFTY": "NOT_SUPPORTED generally; the archived C-1 instance is proven DRAW by an optional-draw-only extension argument",
+    "MODEL_HISTORY": "NOT_SUPPORTED generally; the archived C-1 instance is proven DRAW by an optional-draw-only extension argument"
+  },
+  "sourceRevisions": {
+    "androidRepositoryCommit": "80b8f45765c03f48cf957513cb38118ecd6b641a",
+    "androidWorkingTreeDirtyBeforeAnalysis": true,
+    "fairyStockfishCommit": "9f778da667f6e07dae1e85d3e2ea204fc6dee94d",
+    "fairyStockfishWorkingTreeDirtyBeforeAnalysis": true,
+    "nightManifestEngineSha256": "68018a585b4f8ba1d7a064fd4b00f8786b28cb8d28fa111821bec73c213cbb40",
+    "localEngineSha256": "68018a585b4f8ba1d7a064fd4b00f8786b28cb8d28fa111821bec73c213cbb40",
+    "binaryMatchesNightManifest": true,
+    "nightManifestWorkingTreePatchSha256": "3168a204bc48a9269940b508dc1d771a7ef84438766cba787d4cd835cce96c70",
+    "patchSourceCaptured": false,
+    "oldEngineBuildReproducibleFromCommitAlone": false
+  },
+  "domain": {
+    "maxOccupiedSquares": 4,
+    "countIncludesAllKingsAndPawns": true,
+    "tableDomain": "exactly one king per color, zero pawns, no king debt, no castling rights, no en-passant square",
+    "kingSafetyFiltering": false,
+    "kingMayCaptureOwnMinor": true,
+    "lastOpponentKingCaptureIsImmediateWin": true,
+    "tableDrawIsNotAnAppGameResult": true
+  },
+  "classes": [
+    {"class": "KK", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 8064, "table": "tables/KK.lctb", "sha256": "32CB921E9DD26A33352659FF87F14526C4D0AA443CBC4FDB80E7FAFBAB884736"},
+    {"class": "KBK-WHITE", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 499968, "table": "tables/KBK-WHITE.lctb", "sha256": "1AC83DECB4747AB580702B8F80FA08A59A8FC8762A30CC429C9ACD5A00EE1578"},
+    {"class": "KBK-BLACK", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 499968, "table": "tables/KBK-BLACK.lctb", "sha256": "448F340DAE358FBBA29FB5F0C55CE3093C977917896172054EACACF274C08241"},
+    {"class": "KNK-WHITE", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 499968, "table": "tables/KNK-WHITE.lctb", "sha256": "75307997DA51499A84E317693F382C4C926EFE15F8D4CBF23031C3254FF98277"},
+    {"class": "KNK-BLACK", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 499968, "table": "tables/KNK-BLACK.lctb", "sha256": "4D8A7B3A323C8BD2C173B5A8B0484C0AB19DAAE38D2213F2EE5E98092C78B455"},
+    {"class": "KRK-WHITE", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 499968, "table": "tables/KRK-WHITE.lctb", "sha256": "123B4FBC80620B9012DC6BEDF286D0B80E3BC8024E35126B54CBA30139FF9E58"},
+    {"class": "KRK-BLACK", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 499968, "table": "tables/KRK-BLACK.lctb", "sha256": "8F97A70C121607BEF43754053F5ED1377C20FDEFAB6416A78A27783D8F0E406D"},
+    {"class": "KQK-WHITE", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 499968, "table": "tables/KQK-WHITE.lctb", "sha256": "D5C902DFF3286B80EB0678D3279F0B1AABA18573865414EED2BFD5AE4D623BB9"},
+    {"class": "KQK-BLACK", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 499968, "table": "tables/KQK-BLACK.lctb", "sha256": "962093501B62D8513CDA668478D461565605A1A2DE1D52DACDA7CBE8FF6D9318"},
+    {"class": "KBKB, one bishop per color; same/opposite square colors", "model": "MODEL_UNBOUNDED", "coverage": "SUPPORTED_COMPLETE", "validStates": 30498048, "table": "tables/KBKB.lctb", "sha256": "99BC4D14A927121700128C48FC58C7ACB3C093DF94DB637EFCDBB82F76C95A89"},
+    {"class": "KBBK/KNNK/KBNK and other same-side two-minor classes", "model": "MODEL_UNBOUNDED", "coverage": "NOT_SUPPORTED", "reason": "solver not implemented"},
+    {"class": "all remaining four-piece classes", "model": "MODEL_UNBOUNDED", "coverage": "NOT_SUPPORTED", "reason": "solver not implemented"},
+    {"class": "pawn/promotion/debt/multiple-kings/castling/en-passant classes", "model": "MODEL_UNBOUNDED", "coverage": "NOT_SUPPORTED", "reason": "state graph not implemented"}
+  ],
+  "verification": {
+    "independentMoveGenerator": "tools/endgame/verify_tables.py and tools/endgame/verify_kbkb.cpp",
+    "verifiedValidStates": 34505856,
+    "wdlRecurrenceMismatches": 0,
+    "dtlkRecurrenceMismatches": 0,
+    "drawClosureChecked": true,
+    "terminalCaptureAndRankChecked": true,
+    "kbkbVerifier": {"source": "tools/endgame/verify_kbkb.cpp", "verifiedStates": 30498048, "recurrenceErrors": 0}
+  },
+  "computedStatistics": {
+    "KK": {"WIN": 840, "DRAW": 7224, "LOSS": 0, "dtlkWinRangePlies": [1, 1]},
+    "KBKEachMinorColor": {"WIN": 90100, "DRAW": 407872, "LOSS": 1996, "dtlkWinRangePlies": [1, 19], "dtlkLossRangePlies": [2, 18]},
+    "KNKEachMinorColor": {"WIN": 73372, "DRAW": 426084, "LOSS": 512, "dtlkWinRangePlies": [1, 29], "dtlkLossRangePlies": [2, 28]},
+    "KRKEachRookColor": {"WIN": 276024, "DRAW": 22176, "LOSS": 201768, "dtlkWinRangePlies": [1, 33], "dtlkLossRangePlies": [2, 34]},
+    "KQKEachQueenColor": {"WIN": 276024, "DRAW": 22176, "LOSS": 201768, "dtlkWinRangePlies": [1, 17], "dtlkLossRangePlies": [2, 18]},
+    "KBKB": {"WIN": 6884184, "DRAW": 23613688, "LOSS": 176, "sameSquareColor": {"WIN": 3327416, "DRAW": 11679560, "LOSS": 0}, "oppositeSquareColor": {"WIN": 3556768, "DRAW": 11934128, "LOSS": 176}, "dtlkWinRangePlies": [1, 19], "dtlkLossRangePlies": [4, 14]},
+    "statePerspective": "side to move; all placements and both turns in each listed material assignment",
+    "notProbabilityOrElo": true
+  },
+  "targetedHistoryAwareProofs": {
+    "C-1": {
+      "positionFile": "c1-night-actual.json",
+      "MODEL_UNBOUNDED": "DRAW",
+      "MODEL_FIFTY": "DRAW",
+      "MODEL_HISTORY": "DRAW",
+      "proof": "optional draw-only actions preserve an already-proven unbounded DRAW",
+      "scope": "specific archived state only; not a general claim-aware solver"
+    }
+  },
+  "nightInputs": {
+    "root": "playtest-results/night-20261006/",
+    "profiles": {"A": 2291, "B": 176, "C": 116},
+    "sameMultivolumeArchiveParts": ["A.part1.rar", "A.part2.rar", "A.part3.rar"],
+    "archivesProcessedAsSeparateSamples": false,
+    "extractedGzipCrcVerification": "complete: all 2,583 source gzip logs were streamed to EOF; one log lacked END but parsed fully",
+    "logsWithMissingEnd": 1,
+    "endRecordsWithNullResult": 313,
+    "extractedEpisodeFile": "night-endgame-episodes.jsonl.gz",
+    "extractedEpisodeSha256": "C0FBCF4AA43955FBFAD75F697F2E0F6CDE16FDFEECD95C4EA58BC5F1E2BD951F",
+    "extractedEpisodeRows": 64864,
+    "positionStateOccurrences": 128662,
+    "uniqueUnboundedPositionKeys": 9155,
+    "unboundedPositionStatuses": {"WIN": 7818, "DRAW": 84734, "LOSS": 8629, "UNKNOWN": 23695, "OUT_OF_SCOPE": 3786},
+    "coveredTableOccurrences": {"WIN": 7818, "DRAW": 84734, "LOSS": 7784},
+    "observedDecisionAudit": {
+      "file": "observed-table-decisions.json",
+      "coveredObservedMoves": 49979,
+      "parentWdlCounts": {"LOSS": 3892, "WIN": 3909, "DRAW": 42178},
+      "abandonedTableProvedWins": 0,
+      "drawToLossMoves": 0,
+      "winPreservedButSlower": 1221,
+      "lossesNotProlongedToOptimalDTLK": 421,
+      "qualification": "only logged selected moves with a supported MODEL_UNBOUNDED parent and child; not MODEL_FIFTY/HISTORY, unsupported classes, or alternate search branches"
+    },
+    "fiftyModelOccurrences": {"UNKNOWN": 127817, "terminalLOSS": 845},
+    "historyModelOccurrences": {"UNKNOWN": 127817, "terminalLOSS": 845},
+    "boundaryOccurrenceCaveat": "Raw occurrence counters include 85 C continuation boundary positions with <=4 pieces; these are indexed as shared, not independent observations. Unique keys deduplicate same unbounded position across profiles.",
+    "cContinuationBoundaryIndex": "c-continuation-boundaries.jsonl; 116 boundaries, 85 with <=4 pieces, each matches C START state",
+    "rarCrcVerified": false,
+    "rarIntegrityNote": "All expected archive files/volumes are present and listed, but Windows tar reports a too-small-block error on multi-volume RAR listings; RAR payload CRC was not independently verified",
+    "olderSeries20261006v2MixedIntoNightCounts": false
+  },
+  "commands": {
+    "verify": "python tools/endgame/verify_tables.py playtest-results/endgame-analysis-20261006/tables",
+    "extract": "python tools/endgame/extract_night_positions.py playtest-results/night-20261006 playtest-results/endgame-analysis-20261006/tables playtest-results/endgame-analysis-20261006",
+    "auditObservedMoves": "python tools/endgame/summarize_playtest_choices.py playtest-results/endgame-analysis-20261006/night-endgame-episodes.jsonl.gz playtest-results/endgame-analysis-20261006/observed-table-decisions.json",
+    "continueCore": "playtest-results/endgame-analysis-20261006/lifechess_tb_solve.exe playtest-results/endgame-analysis-20261006/tables ALL",
+    "verifyKbkb": "g++ -std=c++17 -O3 -DNDEBUG -Wall -Wextra -pedantic tools/endgame/verify_kbkb.cpp -o playtest-results/endgame-analysis-20261006/verify_kbkb.exe; .\\playtest-results\\endgame-analysis-20261006\\verify_kbkb.exe playtest-results/endgame-analysis-20261006/tables",
+    "auditC1": "python tools/endgame/audit_c1.py playtest-results/endgame-analysis-20261006/c1-night-actual.json playtest-results/endgame-analysis-20261006/tables"
+  }
+}

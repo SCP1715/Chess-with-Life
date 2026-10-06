@@ -1,0 +1,17 @@
+{
+  "updatedLocal": "2026-10-06T10:45:00.164831+04:00",
+  "stopped": true,
+  "elapsedSeconds": {
+    "A": 14818.065999999844,
+    "B": 6192.719000000051,
+    "C": 3883.5269999999723
+  },
+  "attempts": {
+    "A": 2291,
+    "B": 176,
+    "C": 116
+  },
+  "nextStep": "resume with the same --output and --stop-at-local",
+  "stopReason": "SCHEDULED_LOCAL_STOP_TIME_REACHED",
+  "playtestStoppedAtLocal": "2026-10-06T10:45:00.164831+04:00"
+}

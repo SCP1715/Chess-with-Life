@@ -24,6 +24,11 @@ GNU GPL-3.0.
 
 Исходная ревизия адаптированного движка для этого выпуска: `ae608671`.
 
+Исследовательские отчёты по плейтестам и точному анализу ограниченных
+классов окончаний опубликованы отдельно от релиза приложения. В них указаны
+версии правил, методика, ограничения и доступ к архивам данных: [исследования
+и тестирование](https://github.com/SCP1715/Chess-with-Life/tree/main/research).
+
 ### Полные правила
 
 Цель игры — взять все короли соперника. Игра рассчитана на двух игроков за
@@ -91,6 +96,11 @@ and links to the original project, the adapted fork, and the engine GPL-3.0
 license.
 
 Engine source revision used for this release: `ae608671`.
+
+Playtest reports and exact analysis for selected endgame classes are published
+separately from the app release. Their rules versions, methods, limitations,
+and downloadable data are documented in
+[Research and testing](https://github.com/SCP1715/Chess-with-Life/tree/main/research).
 
 ### Complete rules
 

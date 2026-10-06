@@ -1,0 +1,32 @@
+{
+  "createdUtc": "2026-10-05T23:20:49.224377+00:00",
+  "localTimezone": "Samara (UTC+04:00)",
+  "variant": "lifechess",
+  "engineSha256": "68018a585b4f8ba1d7a064fd4b00f8786b28cb8d28fa111821bec73c213cbb40",
+  "engineRevision": "9f778da667f6e07dae1e85d3e2ea204fc6dee94d",
+  "engineWorkingTreePatchSha256": "3168a204bc48a9269940b508dc1d771a7ef84438766cba787d4cd835cce96c70",
+  "enginePatchSourceCaptured": false,
+  "build": {
+    "compiler": "MSYS2 g++",
+    "target": "x86_64 Windows",
+    "optimization": "-O3",
+    "threads": 1,
+    "hashMb": 16,
+    "nnue": false,
+    "evaluation": "classical"
+  },
+  "profiles": {
+    "A": { "nodesPerDecision": 10000, "maxPlies": 300 },
+    "B": { "nodesPerDecision": 100000, "maxPlies": 300 },
+    "C": { "inheritsNodesFrom": "parent A/B game", "maxTotalPlies": 1200 }
+  },
+  "timeWeights": { "A": 0.6, "B": 0.25, "C": 0.15 },
+  "opening": { "movePlies": 16, "multiPV": 5, "centipawnWindow": 50, "seeded": true },
+  "drawPolicy": "Offer throttles are per-side; legal draw claims are independent actions.",
+  "dataFormat": "Gzipped JSONL with before/action/after state records",
+  "limitations": [
+    "A/B share opening prefixes; observed events are dependent.",
+    "C contains continuations of A/B games and is not an independent sample.",
+    "The old local engine patch source was not preserved; the binary cannot be rebuilt from the revision alone."
+  ]
+}

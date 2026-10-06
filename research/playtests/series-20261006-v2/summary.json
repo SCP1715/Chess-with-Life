@@ -1,0 +1,54 @@
+{
+  "attempts": 100,
+  "completed": 91,
+  "interrupted": 9,
+  "errors": 0,
+  "results": {
+    "WHITE_WIN": 46,
+    "BLACK_WIN": 45,
+    "DRAW_AGREEMENT": 0,
+    "DRAW_FIFTY_MOVES": 0,
+    "DRAW_REPETITION": 0
+  },
+  "medianPlies": 121,
+  "uniqueGames": 17,
+  "uniqueFirstTenPlyOpenings": 17,
+  "randomizedPlyCount": 279,
+  "selectedAlternativePlyCount": 160,
+  "eventCounts": {
+    "CASTLING": 134,
+    "DRAW_OFFERED": 150,
+    "DRAW_DECLINED": 150,
+    "KING_LEFT_UNDER_ATTACK": 78,
+    "LAST_OPPONENT_KING_CAPTURED": 91,
+    "LOW_MATERIAL_POSITION": 88,
+    "PROMOTION": 114,
+    "KING_SELF_CAPTURE": 27,
+    "DRAW_CLAIM_AVAILABLE_UNUSED": 570,
+    "KING_PROMOTION": 5,
+    "DEBT_RESPONSE": 5
+  },
+  "partiesWithEvent": {
+    "CASTLING": 87,
+    "DRAW_OFFERED": 100,
+    "DRAW_DECLINED": 100,
+    "KING_LEFT_UNDER_ATTACK": 73,
+    "LAST_OPPONENT_KING_CAPTURED": 91,
+    "LOW_MATERIAL_POSITION": 76,
+    "PROMOTION": 76,
+    "KING_SELF_CAPTURE": 27,
+    "DRAW_CLAIM_AVAILABLE_UNUSED": 9,
+    "KING_PROMOTION": 5,
+    "DEBT_RESPONSE": 5
+  },
+  "kingSelfCaptureVictims": {
+    "PAWN": 21,
+    "BISHOP": 5,
+    "KNIGHT": 1
+  },
+  "kingSelfCapturesPer1000CompletedPlies": 2.4141630901287554,
+  "pawnEpisodes": 151,
+  "pawnEpisodesWithThreeOrMoreDeclinedPromotions": 28,
+  "pawnEpisodeMaxDurationPlies": 51,
+  "completedPlies": 11184
+}

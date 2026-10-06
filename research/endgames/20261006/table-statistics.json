@@ -1,0 +1,525 @@
+{
+  "KBK-BLACK": {
+    "validStates": 499968,
+    "indexSpace": 524288,
+    "wdl": {
+      "WIN": 90100,
+      "LOSS": 1996,
+      "DRAW": 407872
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 26040,
+        "LOSS": 1996,
+        "DRAW": 221948
+      },
+      "BLACK": {
+        "WIN": 64060,
+        "DRAW": 185924
+      }
+    },
+    "byMinorSquareParity": {
+      "LIGHT_PARITY_0": {
+        "WIN": 45050,
+        "DRAW": 203936,
+        "LOSS": 998
+      },
+      "LIGHT_PARITY_1": {
+        "WIN": 45050,
+        "LOSS": 998,
+        "DRAW": 203936
+      }
+    },
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 19
+      },
+      "LOSS": {
+        "min": 2,
+        "max": 18
+      }
+    }
+  },
+  "KBK-WHITE": {
+    "validStates": 499968,
+    "indexSpace": 524288,
+    "wdl": {
+      "WIN": 90100,
+      "DRAW": 407872,
+      "LOSS": 1996
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 64060,
+        "DRAW": 185924
+      },
+      "BLACK": {
+        "WIN": 26040,
+        "DRAW": 221948,
+        "LOSS": 1996
+      }
+    },
+    "byMinorSquareParity": {
+      "LIGHT_PARITY_0": {
+        "WIN": 45050,
+        "DRAW": 203936,
+        "LOSS": 998
+      },
+      "LIGHT_PARITY_1": {
+        "WIN": 45050,
+        "DRAW": 203936,
+        "LOSS": 998
+      }
+    },
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 19
+      },
+      "LOSS": {
+        "min": 2,
+        "max": 18
+      }
+    }
+  },
+  "KBKB": {
+    "validStates": 30498048,
+    "indexSpace": 33554432,
+    "wdl": {
+      "WIN": 6884184,
+      "DRAW": 23613688,
+      "LOSS": 176
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 3442092,
+        "DRAW": 11806844,
+        "LOSS": 88
+      },
+      "BLACK": {
+        "WIN": 3442092,
+        "DRAW": 11806844,
+        "LOSS": 88
+      }
+    },
+    "byMinorSquareParity": {},
+    "byBishopSquareRelation": {
+      "SAME_COLOR": {
+        "WIN": 3327416,
+        "DRAW": 11679560
+      },
+      "OPPOSITE_COLOR": {
+        "WIN": 3556768,
+        "DRAW": 11934128,
+        "LOSS": 176
+      }
+    },
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {
+          "WIN": 1663708,
+          "DRAW": 5839780
+        },
+        "BLACK": {
+          "WIN": 1663708,
+          "DRAW": 5839780
+        }
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {
+          "WIN": 1778384,
+          "DRAW": 5967064,
+          "LOSS": 88
+        },
+        "BLACK": {
+          "WIN": 1778384,
+          "DRAW": 5967064,
+          "LOSS": 88
+        }
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 19
+      },
+      "LOSS": {
+        "min": 4,
+        "max": 14
+      }
+    }
+  },
+  "KK": {
+    "validStates": 8064,
+    "indexSpace": 8192,
+    "wdl": {
+      "WIN": 840,
+      "DRAW": 7224
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 420,
+        "DRAW": 3612
+      },
+      "BLACK": {
+        "WIN": 420,
+        "DRAW": 3612
+      }
+    },
+    "byMinorSquareParity": {},
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 1
+      }
+    }
+  },
+  "KNK-BLACK": {
+    "validStates": 499968,
+    "indexSpace": 524288,
+    "wdl": {
+      "WIN": 73372,
+      "LOSS": 512,
+      "DRAW": 426084
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 26040,
+        "LOSS": 512,
+        "DRAW": 223432
+      },
+      "BLACK": {
+        "WIN": 47332,
+        "DRAW": 202652
+      }
+    },
+    "byMinorSquareParity": {
+      "LIGHT_PARITY_0": {
+        "WIN": 36686,
+        "DRAW": 213042,
+        "LOSS": 256
+      },
+      "LIGHT_PARITY_1": {
+        "WIN": 36686,
+        "LOSS": 256,
+        "DRAW": 213042
+      }
+    },
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 29
+      },
+      "LOSS": {
+        "min": 2,
+        "max": 28
+      }
+    }
+  },
+  "KNK-WHITE": {
+    "validStates": 499968,
+    "indexSpace": 524288,
+    "wdl": {
+      "WIN": 73372,
+      "DRAW": 426084,
+      "LOSS": 512
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 47332,
+        "DRAW": 202652
+      },
+      "BLACK": {
+        "WIN": 26040,
+        "DRAW": 223432,
+        "LOSS": 512
+      }
+    },
+    "byMinorSquareParity": {
+      "LIGHT_PARITY_0": {
+        "WIN": 36686,
+        "DRAW": 213042,
+        "LOSS": 256
+      },
+      "LIGHT_PARITY_1": {
+        "WIN": 36686,
+        "DRAW": 213042,
+        "LOSS": 256
+      }
+    },
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 29
+      },
+      "LOSS": {
+        "min": 2,
+        "max": 28
+      }
+    }
+  },
+  "KQK-BLACK": {
+    "validStates": 499968,
+    "indexSpace": 524288,
+    "wdl": {
+      "WIN": 276024,
+      "LOSS": 201768,
+      "DRAW": 22176
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 26040,
+        "LOSS": 201768,
+        "DRAW": 22176
+      },
+      "BLACK": {
+        "WIN": 249984
+      }
+    },
+    "byMinorSquareParity": {
+      "LIGHT_PARITY_0": {
+        "WIN": 138012,
+        "LOSS": 100884,
+        "DRAW": 11088
+      },
+      "LIGHT_PARITY_1": {
+        "WIN": 138012,
+        "LOSS": 100884,
+        "DRAW": 11088
+      }
+    },
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 17
+      },
+      "LOSS": {
+        "min": 2,
+        "max": 18
+      }
+    }
+  },
+  "KQK-WHITE": {
+    "validStates": 499968,
+    "indexSpace": 524288,
+    "wdl": {
+      "WIN": 276024,
+      "LOSS": 201768,
+      "DRAW": 22176
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 249984
+      },
+      "BLACK": {
+        "WIN": 26040,
+        "LOSS": 201768,
+        "DRAW": 22176
+      }
+    },
+    "byMinorSquareParity": {
+      "LIGHT_PARITY_0": {
+        "WIN": 138012,
+        "LOSS": 100884,
+        "DRAW": 11088
+      },
+      "LIGHT_PARITY_1": {
+        "WIN": 138012,
+        "LOSS": 100884,
+        "DRAW": 11088
+      }
+    },
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 17
+      },
+      "LOSS": {
+        "min": 2,
+        "max": 18
+      }
+    }
+  },
+  "KRK-BLACK": {
+    "validStates": 499968,
+    "indexSpace": 524288,
+    "wdl": {
+      "WIN": 276024,
+      "LOSS": 201768,
+      "DRAW": 22176
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 26040,
+        "LOSS": 201768,
+        "DRAW": 22176
+      },
+      "BLACK": {
+        "WIN": 249984
+      }
+    },
+    "byMinorSquareParity": {
+      "LIGHT_PARITY_0": {
+        "WIN": 138012,
+        "LOSS": 100884,
+        "DRAW": 11088
+      },
+      "LIGHT_PARITY_1": {
+        "WIN": 138012,
+        "LOSS": 100884,
+        "DRAW": 11088
+      }
+    },
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 33
+      },
+      "LOSS": {
+        "min": 2,
+        "max": 34
+      }
+    }
+  },
+  "KRK-WHITE": {
+    "validStates": 499968,
+    "indexSpace": 524288,
+    "wdl": {
+      "WIN": 276024,
+      "LOSS": 201768,
+      "DRAW": 22176
+    },
+    "bySideToMove": {
+      "WHITE": {
+        "WIN": 249984
+      },
+      "BLACK": {
+        "WIN": 26040,
+        "LOSS": 201768,
+        "DRAW": 22176
+      }
+    },
+    "byMinorSquareParity": {
+      "LIGHT_PARITY_0": {
+        "WIN": 138012,
+        "LOSS": 100884,
+        "DRAW": 11088
+      },
+      "LIGHT_PARITY_1": {
+        "WIN": 138012,
+        "LOSS": 100884,
+        "DRAW": 11088
+      }
+    },
+    "byBishopSquareRelation": {},
+    "byBishopSquareRelationAndTurn": {
+      "SAME_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      },
+      "OPPOSITE_COLOR": {
+        "WHITE": {},
+        "BLACK": {}
+      }
+    },
+    "dtlkRange": {
+      "WIN": {
+        "min": 1,
+        "max": 33
+      },
+      "LOSS": {
+        "min": 2,
+        "max": 34
+      }
+    }
+  }
+}

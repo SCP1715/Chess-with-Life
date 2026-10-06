@@ -129,6 +129,20 @@ Engine integration and console-protocol checks are documented in
 Russian rules and implementation profile are in
 [`docs/lifechess-rules.md`](docs/lifechess-rules.md).
 
+## Исследования и тестирование
+
+Отчёты self-play, точный анализ ограниченных классов окончаний, методика,
+ограничения и ссылки на отдельный архивный Release собраны в
+[исследовательском разделе](research/README.md). Большие журналы и таблицы не
+включаются в обычную Git-историю и не требуются для сборки APK.
+
+## Research and testing
+
+Self-play reports, exact analysis for explicitly limited endgame classes,
+methods, caveats, and links to the separate data release are collected in the
+[research section](research/README.md). Large game logs and tables are not in
+the regular Git history and are not required to build the APK.
+
 ### Rules in brief
 
 The full rules are included in the app and in the

@@ -1,0 +1,30 @@
+{
+  "createdUtc": "2026-10-05T21:47:04.099028+00:00",
+  "gamesRequested": 100,
+  "variant": "lifechess",
+  "engineSha256": "68018a585b4f8ba1d7a064fd4b00f8786b28cb8d28fa111821bec73c213cbb40",
+  "engineRevision": "9f778da667f6e07dae1e85d3e2ea204fc6dee94d",
+  "engineWorkingTreePatchSha256": "3168a204bc48a9269940b508dc1d771a7ef84438766cba787d4cd835cce96c70",
+  "enginePatchSourceCaptured": false,
+  "build": {
+    "compiler": "MSYS2 g++",
+    "target": "x86_64 Windows",
+    "optimization": "-O3",
+    "threads": 1,
+    "hashMb": 16,
+    "nnue": false,
+    "evaluation": "classical"
+  },
+  "search": {
+    "limit": "fixed nodes",
+    "nodesPerDecision": 10000,
+    "openingMultiPV": 4,
+    "openingRandomizationPlies": 8,
+    "openingCpWindow": 50,
+    "randomSeedBase": 20261006,
+    "maxGamePlies": 300,
+    "timeoutSecondsPerSearch": 30
+  },
+  "drawPolicy": "phase threshold -500 cp at material phase 24 to -50 cp at phase 0; winning side declines incoming offers",
+  "knownIssue": "Both sides shared one offer-cooldown latch; see REVIEW.md. Draw claims are distinct actions."
+}
