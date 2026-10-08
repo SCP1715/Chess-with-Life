@@ -41,6 +41,10 @@ struct ActiveRequestGuard {
     jlong id;
 };
 
+struct StrengthLimitGuard {
+    ~StrengthLimitGuard() { Options["UCI_LimitStrength"] = std::string("false"); }
+};
+
 void initialize_engine() {
     pieceMap.init();
     variants.init();
@@ -144,15 +148,22 @@ Java_ru_lifeschess_engine_NativeStockfish_nativeSearch(JNIEnv* env, jclass,
                                                         jstring gameIdValue,
                                                         jstring fenValue, jstring movesValue,
                                                         jint nodeBudget,
+                                                        jint conditionalElo,
                                                         jboolean opponentOffered,
                                                         jint claimMask,
                                                         jboolean offerAlreadySent,
                                                         jboolean analysisMode) {
     if (nodeBudget < 1 || nodeBudget > 1'000'000)
         return to_java(env, error_result("node budget out of range"));
+    if (conditionalElo < 500 || conditionalElo > 2'850)
+        return to_java(env, error_result("conditional Elo out of range"));
 
     std::call_once(engineInitFlag, initialize_engine);
     std::lock_guard<std::mutex> lock(engineMutex);
+    StrengthLimitGuard strengthLimitGuard;
+    Options["UCI_Elo"] = std::to_string(conditionalElo);
+    Options["UCI_LimitStrength"] = std::string(
+        analysisMode == JNI_TRUE ? "false" : "true");
     activeRequestId.store(requestId, std::memory_order_release);
     ActiveRequestGuard requestGuard(requestId);
     if (cancelRequestId.load(std::memory_order_acquire) == requestId)
@@ -201,9 +212,41 @@ Java_ru_lifeschess_engine_NativeStockfish_nativeSearch(JNIEnv* env, jclass,
             + ", stop=" + std::to_string(stopped)
             + ", abort=" + std::to_string(aborted));
     }
-    const Stockfish::Value score = bestThread->rootMoves[0].score;
-    if (score <= -Stockfish::VALUE_INFINITE || score >= Stockfish::VALUE_INFINITE)
-        return to_java(env, error_result("search returned an incomplete score"));
+    const auto isFiniteSearchScore = [](Stockfish::Value value) {
+        return value > -Stockfish::VALUE_INFINITE && value < Stockfish::VALUE_INFINITE;
+    };
+    const Stockfish::Search::RootMove* selectedRootMove = &bestThread->rootMoves[0];
+    Stockfish::Value score = selectedRootMove->score;
+    if (!isFiniteSearchScore(score)) {
+        // При остановке по узлам текущая итерация может оставить выбранную линию без оценки.
+        score = selectedRootMove->previousScore;
+    }
+    if (!isFiniteSearchScore(score)) {
+        selectedRootMove = nullptr;
+        for (const auto& candidate : bestThread->rootMoves) {
+            if (isFiniteSearchScore(candidate.previousScore)
+                && (selectedRootMove == nullptr || candidate.previousScore > score)) {
+                selectedRootMove = &candidate;
+                score = candidate.previousScore;
+            }
+        }
+    }
+    if (selectedRootMove == nullptr) {
+        for (const auto& candidate : bestThread->rootMoves) {
+            if (isFiniteSearchScore(candidate.score)
+                && (selectedRootMove == nullptr || candidate.score > score)) {
+                selectedRootMove = &candidate;
+                score = candidate.score;
+            }
+        }
+    }
+    if (selectedRootMove == nullptr || selectedRootMove->pv.empty())
+        return to_java(env, "ERROR|no finite score from a completed search line; nodes="
+            + std::to_string(Stockfish::Threads.nodes_searched())
+            + ", budget=" + std::to_string(nodeBudget)
+            + ", elo=" + std::to_string(conditionalElo)
+            + ", depth=" + std::to_string(bestThread->rootDepth)
+            + ", completedDepth=" + std::to_string(bestThread->completedDepth));
     const bool repetitionClaim = (claimMask & 1) != 0;
     const bool fiftyMoveClaim = (claimMask & 2) != 0;
     const int materialPhase = std::min(24, 4 * position.count<Stockfish::QUEEN>()
@@ -237,7 +280,7 @@ Java_ru_lifeschess_engine_NativeStockfish_nativeSearch(JNIEnv* env, jclass,
     const bool mateScore = score >= Stockfish::VALUE_MATE_IN_MAX_PLY
                         || score <= Stockfish::VALUE_MATED_IN_MAX_PLY;
     return to_java(env, withRequestMetadata(std::string(decisionName) + "|"
-        + Stockfish::UCI::move(position, bestThread->rootMoves[0].pv[0]) + "|"
+        + Stockfish::UCI::move(position, selectedRootMove->pv[0]) + "|"
         + std::to_string(score) + "|reason=" + reason
         + (mateScore ? "|scoreType=mate" : "|scoreType=cp")
         + "|perspective=side_to_move|threshold=" + std::to_string(offerThreshold)

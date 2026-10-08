@@ -12,6 +12,7 @@ public final class NativeStockfish {
     public static native String nativeLegalMoves(String fen);
     public static native String nativeSearch(long requestId, long stateRevision, String gameId,
                                              String rootFen, String moves, int nodeBudget,
+                                             int conditionalElo,
                                              boolean opponentOffered,
                                              int claimMask,
                                              boolean offerAlreadySent,
@@ -23,31 +24,37 @@ public final class NativeStockfish {
     }
 
     public static String search(long requestId, long stateRevision, String gameId,
-                                GameState state, int nodeBudget, boolean opponentOfferedDraw,
+                                GameState state, int nodeBudget, int conditionalElo,
+                                boolean opponentOfferedDraw,
                                 boolean drawOfferAlreadySent, boolean analysisMode) {
         if (state == null || state.searchRootFen == null)
             return "ERROR|SEARCH_HISTORY_UNAVAILABLE";
         if (nodeBudget <= 0)
             return "ERROR|INVALID_SEARCH_NODE_BUDGET";
+        if (conditionalElo < 500 || conditionalElo > 2_850)
+            return "ERROR|INVALID_CONDITIONAL_ELO";
         String moves = String.join(" ", state.searchMoves);
         int claimMask = 0;
         if (ru.lifeschess.engine.DrawDetector.canClaimRepetition(state)) claimMask |= 1;
         if (ru.lifeschess.engine.DrawDetector.canClaimFiftyMoves(state)) claimMask |= 2;
         if (ru.lifeschess.engine.DrawDetector.canClaimBareKings(state)) claimMask |= 4;
         return nativeSearch(requestId, stateRevision, gameId, state.searchRootFen, moves,
-                nodeBudget, opponentOfferedDraw,
+                nodeBudget, conditionalElo, opponentOfferedDraw,
                 claimMask, drawOfferAlreadySent, analysisMode);
     }
 
     /** Searches from the bot's side to decide an agreement without taking a game turn. */
     public static String searchDrawResponse(long requestId, long stateRevision, String gameId,
-                                            GameState state, Side botSide, int nodeBudget) {
+                                            GameState state, Side botSide, int nodeBudget,
+                                            int conditionalElo) {
         if (state == null || botSide == null)
             return "ERROR|DRAW_RESPONSE_STATE_UNAVAILABLE";
         if (nodeBudget <= 0)
             return "ERROR|INVALID_SEARCH_NODE_BUDGET";
+        if (conditionalElo < 500 || conditionalElo > 2_850)
+            return "ERROR|INVALID_CONDITIONAL_ELO";
         return nativeSearch(requestId, stateRevision, gameId,
-                LifeChessFen.encode(state, botSide), "", nodeBudget, true, 0,
+                LifeChessFen.encode(state, botSide), "", nodeBudget, conditionalElo, true, 0,
                 state.drawOfferSentInCurrentNonWinningStretch, false);
     }
 }

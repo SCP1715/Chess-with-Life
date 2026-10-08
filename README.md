@@ -1,14 +1,20 @@
-# Шахматы с жизнями — 0.2 beta
+# Шахматы с жизнями — 0.2.1 beta
 
 Офлайн-приложение для двух игроков на одном Android-устройстве. Приложение
 поддерживает несколько королей, обязательное взятие после превращения в короля,
 вертикальную рокировку, редактор позиции и заявления о ничьей, в том числе по
 двум несоседним голым королям. В режиме против компьютера настраиваются сторона,
-бюджет поиска (1 000 / 2 000 / 5 000 / 10 000 / 25 000 / 50 000 узлов) и
-отображение оценки. Обычный уровень использует те же 10 000 узлов на решение,
+лимит поиска (1 000 / 2 000 / 5 000 / 10 000 / 25 000 / 50 000 узлов), условный
+ELO бота (500–2 850) и отображение оценки. Условный ELO ослабляет выбор ходов,
+но не откалиброван как рейтинг для этого варианта; лимит узлов независимо
+ограничивает вычисления. Обычный уровень использует те же 10 000 узлов на решение,
 что и плейтесты. Есть русская и английская локализации и экран «О программе» с
 атрибуцией движка. Бой короля не ограничивает обычные ходы. Минимальная версия
 Android — 4.4 (API 19).
+
+Версия 0.2.1 beta добавляет шкалу оценки позиции сбоку от доски и числовые
+оценки для обеих сторон. В каждой партии отображаются взятые фигуры и текущий
+материальный перевес; эти строки не зависят от настройки показа оценки.
 
 ## Сборка
 
@@ -103,8 +109,10 @@ or newer and needs no account, network connection, or permissions.
 ### Features
 
 - Local two-player games and games against the adapted Fairy-Stockfish engine.
-- Search budgets of 1,000, 2,000, 5,000, 10,000, 25,000, or 50,000 nodes per
-  engine decision. These are not Elo ratings.
+- Search limits of 1,000, 2,000, 5,000, 10,000, 25,000, or 50,000 nodes per
+  engine decision, independently configurable from bot strength.
+- A conditional ELO setting from 500 to 2,850 intentionally weakens move
+  selection. It is not a calibrated rating for this variant.
 - Optional evaluation from White's perspective, disabled by default.
 - Russian and English interface; change language from the main menu.
 - Position editor, promotion choices, mandatory king-capture debt, and draw

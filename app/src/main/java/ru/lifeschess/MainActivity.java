@@ -11,8 +11,10 @@ import android.os.Looper;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -27,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.UUID;
 import java.util.Locale;
 import ru.lifeschess.engine.Board;
+import ru.lifeschess.engine.BotDifficulty;
 import ru.lifeschess.engine.DrawDetector;
 import ru.lifeschess.engine.GameResult;
 import ru.lifeschess.engine.GameState;
@@ -50,11 +53,16 @@ public final class MainActivity extends Activity {
     private boolean botGame, botThinking;
     private Side botSide = Side.BLACK;
     private int botNodeBudget = 10_000;
+    private int botConditionalElo = BotDifficulty.DEFAULT_CONDITIONAL_ELO;
     private Side activeBotSide = Side.BLACK;
     private int activeBotNodeBudget = 10_000;
+    private int activeBotConditionalElo = BotDifficulty.DEFAULT_CONDITIONAL_ELO;
     private boolean showEvaluation, activeShowEvaluation, analysisThinking;
-    private TextView evaluationView;
+    private GameScreen gameScreen;
     private GameState analysisState;
+    private GameState evaluationResultState;
+    private int evaluationResultScore;
+    private boolean evaluationResultMate, evaluationResultUnavailable;
     private int botRequestToken;
     private long activeBotNativeRequestId;
     private final ExecutorService botExecutor = Executors.newSingleThreadExecutor();
@@ -84,6 +92,8 @@ public final class MainActivity extends Activity {
         botSide = "WHITE".equals(preferences.getString("humanSide", "WHITE"))
                 ? Side.BLACK : Side.WHITE;
         botNodeBudget = preferences.getInt("searchNodes", 10_000);
+        botConditionalElo = preferences.getInt("botConditionalElo",
+                BotDifficulty.DEFAULT_CONDITIONAL_ELO);
         showEvaluation = preferences.getBoolean("showEvaluation", false);
         if (savedInstanceState != null) {
             Object saved = savedInstanceState.getSerializable(K_STATE);
@@ -98,6 +108,8 @@ public final class MainActivity extends Activity {
             stateRevision = savedInstanceState.getLong("stateRevision", 0);
             activeBotSide = Side.values()[savedInstanceState.getInt("activeBotSide", Side.BLACK.ordinal())];
             activeBotNodeBudget = savedInstanceState.getInt("activeBotNodeBudget", botNodeBudget);
+            activeBotConditionalElo = savedInstanceState.getInt("activeBotConditionalElo",
+                    botConditionalElo);
             activeShowEvaluation = savedInstanceState.getBoolean("activeShowEvaluation", showEvaluation);
             selected = savedInstanceState.getInt(K_SELECTED, -1);
             editorSelected = savedInstanceState.getInt(K_EDITOR_SELECTED, -1);
@@ -122,6 +134,7 @@ public final class MainActivity extends Activity {
         out.putLong("stateRevision", stateRevision);
         out.putInt("activeBotSide", activeBotSide.ordinal());
         out.putInt("activeBotNodeBudget", activeBotNodeBudget);
+        out.putInt("activeBotConditionalElo", activeBotConditionalElo);
         out.putBoolean("activeShowEvaluation", activeShowEvaluation);
         out.putInt(K_SELECTED, selected);
         out.putInt(K_EDITOR_SELECTED, editorSelected);
@@ -169,17 +182,22 @@ public final class MainActivity extends Activity {
         else if (screen == RULES) showRules();
         else if (screen == ABOUT) showAbout();
         else showMenu();
-        if (screen == MENU) addLanguageButton();
     }
 
     private void showMenu() {
         MainMenu.render(this, root, hasGame,
-                () -> { cancelBotSearch(); botGame = false; gameId = UUID.randomUUID().toString(); state = GameState.initial(); hasGame = true; selected = -1; pendingPromotion = null; screen = GAME; showScreen(); },
+                () -> {
+                    cancelBotSearch(); botGame = false; activeShowEvaluation = showEvaluation;
+                    activeBotNodeBudget = botNodeBudget; activeBotConditionalElo = botConditionalElo;
+                    gameId = UUID.randomUUID().toString(); state = GameState.initial(); hasGame = true;
+                    selected = -1; pendingPromotion = null; screen = GAME; showScreen();
+                },
                 () -> startComputerGame(),
                 () -> { screen = GAME; selected = -1; showScreen(); },
                 () -> { cancelBotSearch(); botGame = false; if (!hasEditor) { editor = new BoardEditor(); hasEditor = true; } screen = EDITOR; showScreen(); },
                 () -> { screen = RULES; showScreen(); },
-                () -> { screen = ABOUT; showScreen(); }, this::showComputerSettings);
+                this::showComputerSettings,
+                () -> { screen = ABOUT; showScreen(); }, this::chooseLanguage);
     }
 
     private void startComputerGame() {
@@ -188,6 +206,7 @@ public final class MainActivity extends Activity {
         gameId = UUID.randomUUID().toString();
         activeBotSide = botSide;
         activeBotNodeBudget = botNodeBudget;
+        activeBotConditionalElo = botConditionalElo;
         activeShowEvaluation = showEvaluation;
         state = GameState.initial();
         hasGame = true; selected = -1; pendingPromotion = null; screen = GAME; showScreen();
@@ -203,20 +222,31 @@ public final class MainActivity extends Activity {
                 getString(R.string.side_black)}));
         sideSpinner.setSelection(botSide == Side.BLACK ? 0 : 1);
         form.addView(sideSpinner, new LinearLayout.LayoutParams(-1, -2));
-        label(form, getString(R.string.settings_search_depth));
+        label(form, getString(R.string.settings_search_limit));
         int[] budgets = {1_000, 2_000, 5_000, 10_000, 25_000, 50_000};
-        int[] depthLabels = {R.string.depth_1000, R.string.depth_2000, R.string.depth_5000,
+        int[] budgetLabels = {R.string.depth_1000, R.string.depth_2000, R.string.depth_5000,
                 R.string.depth_10000, R.string.depth_25000, R.string.depth_50000};
-        String[] depths = new String[depthLabels.length];
-        int selectedDepth = 3;
-        for (int i = 0; i < depthLabels.length; i++) {
-            depths[i] = getString(depthLabels[i]);
-            if (budgets[i] == botNodeBudget) selectedDepth = i;
+        String[] budgetNames = new String[budgetLabels.length];
+        int selectedBudget = 3;
+        for (int i = 0; i < budgetLabels.length; i++) {
+            budgetNames[i] = getString(budgetLabels[i]);
+            if (budgets[i] == botNodeBudget) selectedBudget = i;
         }
-        Spinner depthSpinner = new Spinner(this);
-        depthSpinner.setAdapter(spinnerAdapter(depths));
-        depthSpinner.setSelection(selectedDepth);
-        form.addView(depthSpinner, new LinearLayout.LayoutParams(-1, -2));
+        Spinner budgetSpinner = new Spinner(this);
+        budgetSpinner.setAdapter(spinnerAdapter(budgetNames));
+        budgetSpinner.setSelection(selectedBudget);
+        form.addView(budgetSpinner, new LinearLayout.LayoutParams(-1, -2));
+        label(form, getString(R.string.settings_conditional_elo));
+        int[] eloLevels = BotDifficulty.levels();
+        String[] eloLabels = new String[eloLevels.length];
+        for (int i = 0; i < eloLevels.length; i++) eloLabels[i] = Integer.toString(eloLevels[i]);
+        Spinner eloSpinner = new Spinner(this);
+        eloSpinner.setAdapter(spinnerAdapter(eloLabels));
+        eloSpinner.setSelection(BotDifficulty.selectionFor(botConditionalElo));
+        form.addView(eloSpinner, new LinearLayout.LayoutParams(-1, -2));
+        TextView eloNote = new TextView(this);
+        eloNote.setText(R.string.settings_conditional_elo_note);
+        form.addView(eloNote, new LinearLayout.LayoutParams(-1, -2));
         CheckBox evaluationCheck = new CheckBox(this);
         evaluationCheck.setText(R.string.settings_show_evaluation);
         evaluationCheck.setChecked(showEvaluation);
@@ -225,11 +255,13 @@ public final class MainActivity extends Activity {
                 .setNegativeButton(R.string.action_cancel, null)
                 .setPositiveButton(R.string.action_save, (dialog, which) -> {
                     botSide = sideSpinner.getSelectedItemPosition() == 0 ? Side.BLACK : Side.WHITE;
-                    botNodeBudget = budgets[depthSpinner.getSelectedItemPosition()];
+                    botNodeBudget = budgets[budgetSpinner.getSelectedItemPosition()];
+                    botConditionalElo = eloLevels[eloSpinner.getSelectedItemPosition()];
                     showEvaluation = evaluationCheck.isChecked();
                     getSharedPreferences("game-settings", MODE_PRIVATE).edit()
                             .putString("humanSide", botSide == Side.BLACK ? "WHITE" : "BLACK")
                             .putInt("searchNodes", botNodeBudget)
+                            .putInt("botConditionalElo", botConditionalElo)
                             .putBoolean("showEvaluation", showEvaluation).apply();
                     toast(getString(R.string.settings_saved));
                 }).show();
@@ -240,17 +272,6 @@ public final class MainActivity extends Activity {
                 android.R.layout.simple_spinner_item, values);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         return adapter;
-    }
-
-    private void addLanguageButton() {
-        LinearLayout footer = new LinearLayout(this);
-        footer.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
-        Button language = new Button(this);
-        language.setText(R.string.language_button);
-        language.setContentDescription(getString(R.string.language_button_description));
-        language.setOnClickListener(v -> chooseLanguage());
-        footer.addView(language, new LinearLayout.LayoutParams(-2, -2));
-        root.addView(footer, new LinearLayout.LayoutParams(-1, -2));
     }
 
     private void chooseLanguage() {
@@ -274,19 +295,22 @@ public final class MainActivity extends Activity {
                 : R.string.side_black_title);
         String debt = state.debtTargetKings == null ? "" : getString(R.string.debt_suffix,
                 sideName(state.debtTargetKings));
-        GameScreen gameScreen = new GameScreen(this, state.board, selected,
+        boolean showPositionEvaluation = activeShowEvaluation;
+        boolean flipForHumanBlack = botGame && activeBotSide == Side.WHITE;
+        gameScreen = new GameScreen(this, state.board, selected,
                 selected < 0 ? null : RuleEngine.legalMoves(state, selected), this::onGameSquare,
                 outcomeText(state) == null ? getString(R.string.turn_label, turn, debt)
-                        : outcomeText(state));
+                        : outcomeText(state), flipForHumanBlack, showPositionEvaluation);
         status = gameScreen.status; boardView = gameScreen.board;
-        evaluationView = new TextView(this);
-        evaluationView.setTextSize(14);
-        evaluationView.setGravity(Gravity.CENTER);
-        evaluationView.setVisibility(botGame && activeShowEvaluation ? View.VISIBLE : View.GONE);
-        if (botGame && activeShowEvaluation && state.result == GameResult.NONE)
-            evaluationView.setText(R.string.evaluation_calculating);
-        root.addView(evaluationView, new LinearLayout.LayoutParams(-1, -2));
+        if (gameScreen.evaluationBar != null && state.result == GameResult.NONE) {
+            if (evaluationResultState == state) {
+                if (evaluationResultUnavailable) gameScreen.setEvaluationUnavailable();
+                else gameScreen.setEvaluation(evaluationResultScore, evaluationResultMate);
+            } else gameScreen.setEvaluationCalculating();
+        }
         root.addView(gameScreen, new LinearLayout.LayoutParams(-1, 0, 1));
+        root.addView(new MaterialSummary(this, state, flipForHumanBlack),
+                new LinearLayout.LayoutParams(-1, -2));
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.VERTICAL);
         root.addView(buttons, new LinearLayout.LayoutParams(-1, -2));
@@ -328,6 +352,7 @@ public final class MainActivity extends Activity {
                     GameAction.procedure(GameAction.Type.CLAIM_FIFTY_MOVES)); showScreen(); }
         });
         fifty.setTextSize(12);
+        equalizeButtonHeights(row);
         row = horizontal(buttons);
         Button bareKings = button(row, R.string.button_claim_bare_kings, v -> {
             if (!DrawDetector.canClaimBareKings(state)) toast(getString(R.string.error_draw_unavailable));
@@ -403,9 +428,10 @@ public final class MainActivity extends Activity {
             try {
                 result = botMustRespondToDraw
                         ? NativeStockfish.searchDrawResponse(requestToken, requestedRevision,
-                                requestedGameId, requestedState, activeBotSide, activeBotNodeBudget)
+                                requestedGameId, requestedState, activeBotSide,
+                                activeBotNodeBudget, activeBotConditionalElo)
                         : NativeStockfish.search(requestToken, requestedRevision, requestedGameId,
-                                requestedState, activeBotNodeBudget,
+                                requestedState, activeBotNodeBudget, activeBotConditionalElo,
                                 opponentOffered, offerAlreadySent, false);
             } catch (final RuntimeException | LinkageError error) {
                 mainHandler.post(() -> finishBotSearch(requestToken, requestedRevision,
@@ -419,8 +445,8 @@ public final class MainActivity extends Activity {
     }
 
     private void scheduleEvaluation() {
-        if (!botGame || !activeShowEvaluation || state.result != GameResult.NONE
-                || state.drawOfferBy != null || state.toMove == activeBotSide
+        if (!activeShowEvaluation || state.result != GameResult.NONE
+                || (botGame && (state.drawOfferBy != null || state.toMove == activeBotSide))
                 || analysisThinking || analysisState == state)
             return;
         final GameState requestedState = state;
@@ -434,7 +460,7 @@ public final class MainActivity extends Activity {
             final String result;
             try {
                 result = NativeStockfish.search(requestId, requestedRevision, requestedGameId,
-                        requestedState, activeBotNodeBudget,
+                        requestedState, activeBotNodeBudget, activeBotConditionalElo,
                         false, false, true);
             } catch (final RuntimeException | LinkageError error) {
                 mainHandler.post(() -> finishEvaluation(requestId, requestedRevision,
@@ -453,7 +479,7 @@ public final class MainActivity extends Activity {
         activeBotNativeRequestId = 0;
         if (isFinishing() || screen != GAME || state != requestedState
                 || stateRevision != requestedRevision || !gameId.equals(requestedGameId)
-                || evaluationView == null || !activeShowEvaluation) {
+                || gameScreen == null || gameScreen.evaluationBar == null || !activeShowEvaluation) {
             analysisState = null;
             if (!isFinishing() && screen == GAME && state == requestedState
                     && activeShowEvaluation) root.post(this::scheduleEvaluation);
@@ -461,29 +487,39 @@ public final class MainActivity extends Activity {
         }
         if (result != null && !hasNativeRequestMetadata(result.split("\\|", -1),
                 requestedGameId, requestId, requestedRevision)) {
-            evaluationView.setText(R.string.evaluation_unavailable);
+            setEvaluationUnavailable(requestedState);
             return;
         }
         if (result == null || result.startsWith("ERROR|") || result.startsWith("CANCELLED|")) {
-            evaluationView.setText(R.string.evaluation_unavailable);
+            setEvaluationUnavailable(requestedState);
             return;
         }
         String[] fields = result.split("\\|", -1);
         if (fields.length < 3) {
-            evaluationView.setText(R.string.evaluation_unavailable);
+            setEvaluationUnavailable(requestedState);
             return;
         }
         try {
             int score = Integer.parseInt(fields[2]);
             if (requestedState.toMove == Side.BLACK) score = -score;
-            String type = result.contains("scoreType=mate") ? getString(R.string.evaluation_mate)
-                    : result.contains("scoreType=exact") ? getString(R.string.evaluation_exact_draw) : "cp";
-            evaluationView.setText(getString(R.string.evaluation_white,
-                    (score >= 0 ? "+" : "") + ("cp".equals(type)
-                            ? String.format(Locale.ROOT, "%.2f", score / 100.0) : score), type));
+            setEvaluation(requestedState, score, result.contains("scoreType=mate"));
         } catch (NumberFormatException ex) {
-            evaluationView.setText(R.string.evaluation_unavailable);
+            setEvaluationUnavailable(requestedState);
         }
+    }
+
+    private void setEvaluation(GameState evaluatedState, int whiteScore, boolean mate) {
+        evaluationResultState = evaluatedState;
+        evaluationResultScore = whiteScore;
+        evaluationResultMate = mate;
+        evaluationResultUnavailable = false;
+        if (gameScreen != null) gameScreen.setEvaluation(whiteScore, mate);
+    }
+
+    private void setEvaluationUnavailable(GameState evaluatedState) {
+        evaluationResultState = evaluatedState;
+        evaluationResultUnavailable = true;
+        if (gameScreen != null) gameScreen.setEvaluationUnavailable();
     }
 
     private void finishBotSearch(int token, long requestedRevision, String requestedGameId,
@@ -676,6 +712,7 @@ public final class MainActivity extends Activity {
         row = horizontal(root);
         button(row, R.string.editor_play_position, v -> startEditorGame());
         button(row, R.string.action_back, v -> { screen = MENU; showScreen(); });
+        equalizeButtonHeights(row);
     }
 
     private void choosePalette() {
@@ -683,7 +720,8 @@ public final class MainActivity extends Activity {
         choices[i++] = getString(R.string.editor_eraser_choice);
         for (Side side : Side.values()) for (PieceType type : PieceType.values())
             choices[i++] = sideName(side) + " " + pieceName(type);
-        new AlertDialog.Builder(this).setTitle(R.string.editor_palette_title).setItems(choices, (d, which) -> {
+        new AlertDialog.Builder(this).setTitle(R.string.editor_palette_title)
+                .setAdapter(new PaletteAdapter(choices), (d, which) -> {
             if (which == 0) editor.paletteErase = true;
             else { editor.paletteErase = false; int n = which - 1; editor.paletteSide = Side.values()[n / 6]; editor.paletteType = PieceType.values()[n % 6]; }
             showScreen();
@@ -728,7 +766,9 @@ public final class MainActivity extends Activity {
         String error = RuleEngine.validateEditorStart(candidate);
         if (error != null) { toast(localizeEditorError(error)); return; }
         state = DrawDetector.recordPosition(candidate); gameId = UUID.randomUUID().toString();
-        botGame = false; hasGame = true; screen = GAME; selected = -1; showScreen();
+        botGame = false; activeShowEvaluation = showEvaluation;
+        activeBotNodeBudget = botNodeBudget; activeBotConditionalElo = botConditionalElo;
+        hasGame = true; screen = GAME; selected = -1; showScreen();
     }
 
     private void confirmResetGame() {
@@ -783,6 +823,50 @@ public final class MainActivity extends Activity {
         return error;
     }
     private int dp(int n) { return (int) (n * getResources().getDisplayMetrics().density + .5f); }
+    private void equalizeButtonHeights(LinearLayout row) {
+        row.post(() -> {
+            int height = 0;
+            for (int i = 0; i < row.getChildCount(); i++)
+                height = Math.max(height, row.getChildAt(i).getMeasuredHeight());
+            for (int i = 0; i < row.getChildCount(); i++) {
+                View child = row.getChildAt(i);
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) child.getLayoutParams();
+                params.height = height;
+                child.setLayoutParams(params);
+            }
+        });
+    }
+    private final class PaletteAdapter extends BaseAdapter {
+        private final String[] choices;
+
+        PaletteAdapter(String[] choices) { this.choices = choices; }
+        @Override public int getCount() { return choices.length; }
+        @Override public String getItem(int position) { return choices[position]; }
+        @Override public long getItemId(int position) { return position; }
+        @Override public View getView(int position, View convertView, ViewGroup parent) {
+            LinearLayout item = new LinearLayout(MainActivity.this);
+            item.setGravity(Gravity.CENTER_VERTICAL);
+            item.setPadding(dp(16), dp(2), dp(16), dp(2));
+            TextView icon = new TextView(MainActivity.this);
+            icon.setGravity(Gravity.CENTER);
+            icon.setTextSize(30);
+            icon.setTextColor(0xff242424);
+            icon.setTypeface(android.graphics.Typeface.create("serif", android.graphics.Typeface.NORMAL));
+            if (position == 0) icon.setText("×");
+            else {
+                Side side = Side.values()[(position - 1) / PieceType.values().length];
+                PieceType type = PieceType.values()[(position - 1) % PieceType.values().length];
+                icon.setText(String.valueOf(new Piece(side, type, false).symbol()));
+            }
+            item.addView(icon, new LinearLayout.LayoutParams(dp(48), dp(56)));
+            TextView label = new TextView(MainActivity.this);
+            label.setText(choices[position]);
+            label.setTextColor(0xff242424);
+            label.setTextSize(18);
+            item.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
+            return item;
+        }
+    }
     private void title(LinearLayout layout, String text) { TextView t = label(layout, text); t.setTextSize(24); t.setGravity(Gravity.CENTER); t.setPadding(0, dp(4), 0, dp(10)); }
     private void title(LinearLayout layout, int text) { title(layout, getString(text)); }
     private TextView label(android.view.ViewGroup parent, String text) {
@@ -790,7 +874,14 @@ public final class MainActivity extends Activity {
         parent.addView(t, new android.view.ViewGroup.LayoutParams(-1, -2)); return t;
     }
     private TextView label(android.view.ViewGroup parent, int text) { return label(parent, getString(text)); }
-    private LinearLayout horizontal(LinearLayout parent) { LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); parent.addView(row, new LinearLayout.LayoutParams(-1, -2)); return row; }
+    private LinearLayout horizontal(LinearLayout parent) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        // Двухстрочная подпись не должна сдвигать соседнюю кнопку по базовой линии.
+        row.setBaselineAligned(false);
+        parent.addView(row, new LinearLayout.LayoutParams(-1, -2));
+        return row;
+    }
     private Button button(android.view.ViewGroup parent, String text, View.OnClickListener listener) {
         Button b = new Button(this); b.setText(text); b.setTextSize(14); b.setOnClickListener(listener);
         parent.addView(b, new LinearLayout.LayoutParams(0, -2, 1)); return b;

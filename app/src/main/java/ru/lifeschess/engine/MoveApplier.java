@@ -70,6 +70,7 @@ public final class MoveApplier {
         Side pendingOffer = s.drawOfferBy == moving.side.opposite() ? null : s.drawOfferBy;
         GameState applied = s.copy(b, next, ep, debt, half, wK, wQ, wV, bK, bQ, bV,
                 result, result == GameResult.NONE ? pendingOffer : null, s.repetitions);
+        if (captured != null) applied = applied.withCapturedPiece(moving.side, captured);
         GameAction action = GameAction.move(move, promotion);
         return DrawDetector.recordPosition(applied.withEngineMove(action).withHistoryAction(action));
     }
